@@ -6,8 +6,6 @@ from OpenGL.GLUT import *
 
 movement_speed = 0.3
 rotation_angle = 0.3
-
-
 class Vector(object):
     def __init__(self, x, y, z=0):
         self.x = float(x)
@@ -20,7 +18,6 @@ class Vector(object):
             self.x /= length
             self.y /= length
             self.z /= length
-
 
 scale = 15.0
 
@@ -83,10 +80,8 @@ def calculate_terrain():
 
     calculate_normals()
 
-
 color_heights = [-0.7078, -0.6518, -0.5057, -
                  0.27, -0.07, 0.1765, 0.3725, 0.5686, 0.9608]
-
 
 def calculate_normals():
     global normals
@@ -101,7 +96,6 @@ def calculate_normals():
             normal.normalize()
 
             normals[x][y] = [normal.x, normal.y, normal.z]
-
 
 def keyboard(bkey, x, y):
     global offset, scale
@@ -134,7 +128,6 @@ def keyboard_special(key, x, y):
         scale /= 1.3
     calculate_terrain()
 
-
 def initGL():
     calculate_terrain()
     glClear(GL_COLOR_BUFFER_BIT)
@@ -148,7 +141,6 @@ def initGL():
     glLightfv(GL_LIGHT0, GL_POSITION, [1.0, 1.0, 1.0, 0.0])
     glEnable(GL_COLOR_MATERIAL)
     glColorMaterial(GL_FRONT, GL_DIFFUSE)
-
 
 def getColor(value):
     global color_heights
@@ -170,7 +162,6 @@ def getColor(value):
         return 250 / 255.0, 250 / 255.0, 250 / 255.0
     elif value >= color_heights[7]:
         return 1, 1, 1
-
 
 def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -250,18 +241,14 @@ def display():
     glEnd()
     glutSwapBuffers()
 
-
 def reshape(width, height):
     if height == 0:
         height = 1
     aspect = width / height
-
     glViewport(0, 0, width, height)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-
     gluPerspective(45.0, aspect, 0.1, 100.0)
-
 
 if __name__ == '__main__':
     glutInit()
@@ -272,7 +259,7 @@ if __name__ == '__main__':
     glutDisplayFunc(display)
     glutReshapeFunc(reshape)
     glutKeyboardFunc(keyboard)
-    glutSpecialFunc(keyboard_special)  # Register the special keyboard function
+    glutSpecialFunc(keyboard_special)
     initGL()
     glutTimerFunc(0, animate, 0)
 

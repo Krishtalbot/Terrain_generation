@@ -4,8 +4,9 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
-movement_speed = 0.4
-rotation_angle = 0.4
+movement_speed = 0.3
+rotation_angle = 0.3
+
 
 class Vector(object):
     def __init__(self, x, y, z=0):
@@ -20,6 +21,7 @@ class Vector(object):
             self.y /= length
             self.z /= length
 
+
 scale = 15.0
 
 height_scale = 10
@@ -33,12 +35,14 @@ lacunarity = 2
 flattening_threshold = 0.0125
 
 for i in range(octaves):
-    octaveOffsets.append(Vector(np.random.randint(-10000, 10000), np.random.randint(-10000, 10000)))
+    octaveOffsets.append(
+        Vector(np.random.randint(-10000, 10000), np.random.randint(-10000, 10000)))
 
 terrain_size = 200
 terrain = []
 offset = Vector(0, 0, 50)
 normals = np.zeros((terrain_size, terrain_size, 3), dtype=np.float32)
+
 
 def animate(_):
     global offset
@@ -46,6 +50,7 @@ def animate(_):
     calculate_terrain()
     glutPostRedisplay()
     glutTimerFunc(16, animate, 0)
+
 
 def calculate_terrain():
     global terrain
@@ -61,8 +66,10 @@ def calculate_terrain():
             frequency = 1
             noiseHeight = 0
             for i in range(octaves):
-                sampleX = frequency * (x + octaveOffsets[i].x + offset.x) / scale
-                sampleY = frequency * (y + octaveOffsets[i].y + offset.y) / scale
+                sampleX = frequency * \
+                    (x + octaveOffsets[i].x + offset.x) / scale
+                sampleY = frequency * \
+                    (y + octaveOffsets[i].y + offset.y) / scale
                 noiseHeight += amplitude * noise.pnoise2(sampleX, sampleY)
                 amplitude *= persistence
                 frequency *= lacunarity
@@ -76,7 +83,10 @@ def calculate_terrain():
 
     calculate_normals()
 
-color_heights = [-0.7078, -0.6518, -0.5057, -0.27, -0.07, 0.1765, 0.3725, 0.5686, 0.9608]
+
+color_heights = [-0.7078, -0.6518, -0.5057, -
+                 0.27, -0.07, 0.1765, 0.3725, 0.5686, 0.9608]
+
 
 def calculate_normals():
     global normals
@@ -92,7 +102,9 @@ def calculate_normals():
 
             normals[x][y] = [normal.x, normal.y, normal.z]
 
+
 def keyboard(bkey, x, y):
+    global offset, scale
     key = bkey.decode("utf-8")
     if key == 'w':
         offset.y += offset.z
@@ -106,6 +118,22 @@ def keyboard(bkey, x, y):
     elif key == 'd':
         offset.x += offset.z
         calculate_terrain()
+    elif key == 'up':
+        scale *= 1.3
+        calculate_terrain()
+    elif key == 'down':
+        scale /= 1.3
+        calculate_terrain()
+
+
+def keyboard_special(key, x, y):
+    global scale
+    if key == GLUT_KEY_UP:
+        scale *= 1.3
+    elif key == GLUT_KEY_DOWN:
+        scale /= 1.3
+    calculate_terrain()
+
 
 def initGL():
     calculate_terrain()
@@ -120,6 +148,7 @@ def initGL():
     glLightfv(GL_LIGHT0, GL_POSITION, [1.0, 1.0, 1.0, 0.0])
     glEnable(GL_COLOR_MATERIAL)
     glColorMaterial(GL_FRONT, GL_DIFFUSE)
+
 
 def getColor(value):
     global color_heights
@@ -141,6 +170,7 @@ def getColor(value):
         return 250 / 255.0, 250 / 255.0, 250 / 255.0
     elif value >= color_heights[7]:
         return 1, 1, 1
+
 
 def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -183,7 +213,8 @@ def display():
             else:
                 color = getColor(terrain[x + 1][y + 1])
                 glColor3f(color[0], color[1], color[2])
-                glVertex3f((x + 1), (y + 1), (terrain[x + 1][y + 1] * height_scale))
+                glVertex3f((x + 1), (y + 1),
+                           (terrain[x + 1][y + 1] * height_scale))
     glEnd()
 
     glBegin(GL_TRIANGLES)
@@ -196,7 +227,8 @@ def display():
             else:
                 color = getColor(terrain[x + 1][y + 1])
                 glColor3f(color[0], color[1], color[2])
-                glVertex3f((x + 1), (y + 1), (terrain[x + 1][y + 1] * height_scale))
+                glVertex3f((x + 1), (y + 1),
+                           (terrain[x + 1][y + 1] * height_scale))
 
             if terrain[x + 1][y] < flattening_threshold:
                 color = getColor(terrain[x + 1][y])
@@ -218,6 +250,7 @@ def display():
     glEnd()
     glutSwapBuffers()
 
+
 def reshape(width, height):
     if height == 0:
         height = 1
@@ -229,6 +262,7 @@ def reshape(width, height):
 
     gluPerspective(45.0, aspect, 0.1, 100.0)
 
+
 if __name__ == '__main__':
     glutInit()
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH)
@@ -238,6 +272,7 @@ if __name__ == '__main__':
     glutDisplayFunc(display)
     glutReshapeFunc(reshape)
     glutKeyboardFunc(keyboard)
+    glutSpecialFunc(keyboard_special)  # Register the special keyboard function
     initGL()
     glutTimerFunc(0, animate, 0)
 

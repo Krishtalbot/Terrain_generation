@@ -4,14 +4,21 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
-movement_speed = 0.5
-rotation_angle = 0.5
+movement_speed = 0.3
+rotation_angle = 0.3
 
 class Vector(object):
     def __init__(self, x, y, z=0):
         self.x = float(x)
         self.y = float(y)
         self.z = float(z)
+
+    def normalize(self):
+        length = np.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
+        if length != 0:
+            self.x /= length
+            self.y /= length
+            self.z /= length
 
 scale = 15.0
 
@@ -31,7 +38,7 @@ for i in range(octaves):
 terrain_size = 200
 terrain = []
 offset = Vector(0, 0, 50)
-
+normals = np.zeros((terrain_size, terrain_size, 3), dtype=np.float32)
 
 def animate(_):
     global offset
@@ -67,8 +74,23 @@ def calculate_terrain():
     terrain = np.array(terrain)
     np.clip(terrain, -0.71, max_val)
 
-color_heights = [-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8]
+    calculate_normals()
 
+color_heights = [-0.7078, -0.6518, -0.5057, -0.27, -0.07, 0.1765, 0.3725, 0.5686, 0.9608]
+
+def calculate_normals():
+    global normals
+    normals = np.zeros((terrain_size, terrain_size, 3), dtype=np.float32)
+
+    for y in range(terrain_size):
+        for x in range(terrain_size):
+            dx = terrain[(x + 1) % terrain_size][y] - terrain[x][y]
+            dy = terrain[x][(y + 1) % terrain_size] - terrain[x][y]
+
+            normal = Vector(dy, -dx, 2.0)
+            normal.normalize()
+
+            normals[x][y] = [normal.x, normal.y, normal.z]
 
 def keyboard(bkey, x, y):
     key = bkey.decode("utf-8")
@@ -85,7 +107,6 @@ def keyboard(bkey, x, y):
         offset.x += offset.z
         calculate_terrain()
 
-
 def initGL():
     calculate_terrain()
     glClear(GL_COLOR_BUFFER_BIT)
@@ -94,7 +115,11 @@ def initGL():
     glDepthFunc(GL_LEQUAL)
     glShadeModel(GL_SMOOTH)
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-
+    glEnable(GL_LIGHTING)
+    glEnable(GL_LIGHT0)
+    glLightfv(GL_LIGHT0, GL_POSITION, [1.0, 1.0, 1.0, 0.0])
+    glEnable(GL_COLOR_MATERIAL)
+    glColorMaterial(GL_FRONT, GL_DIFFUSE)
 
 def getColor(value):
     global color_heights
@@ -117,7 +142,6 @@ def getColor(value):
     elif value >= color_heights[7]:
         return 1, 1, 1
 
-
 def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glMatrixMode(GL_MODELVIEW)
@@ -125,15 +149,19 @@ def display():
 
     glTranslatef(-terrain_size / 2.0, -25, -6)
     glRotate(60, -1, 0, 0)
+    glEnableClientState(GL_NORMAL_ARRAY)
+    glNormalPointer(GL_FLOAT, 0, normals)
     offset.x += movement_speed
     glBegin(GL_TRIANGLES)
     for y in range(1, terrain_size - 1):
         for x in range(1, terrain_size - 1):
             if terrain[x][y + 1] < flattening_threshold:
+                glNormal3fv(normals[x][y + 1])
                 color = getColor(terrain[x][y + 1])
                 glColor3f(color[0], color[1], color[2])
                 glVertex(x, (y + 1), 0)
             else:
+                glNormal3fv(normals[x][y])
                 color = getColor(terrain[x][y + 1])
                 glColor3f(color[0], color[1], color[2])
                 glVertex3f(x, (y + 1), (terrain[x][y + 1] * height_scale))
@@ -142,13 +170,13 @@ def display():
                 color = getColor(terrain[x][y])
                 glColor3f(color[0], color[1], color[2])
                 glVertex3f(x, y, 0)
-
             else:
                 color = getColor(terrain[x][y])
                 glColor3f(color[0], color[1], color[2])
                 glVertex3f(x, y, (terrain[x][y] * height_scale))
 
             if terrain[x + 1][y + 1] < flattening_threshold:
+                glNormal3fv(normals[x + 1][y + 1])
                 color = getColor(terrain[x + 1][y + 1])
                 glColor3f(color[0], color[1], color[2])
                 glVertex3f((x + 1), (y + 1), 0)
@@ -190,7 +218,6 @@ def display():
     glEnd()
     glutSwapBuffers()
 
-
 def reshape(width, height):
     if height == 0:
         height = 1
@@ -202,12 +229,10 @@ def reshape(width, height):
 
     gluPerspective(45.0, aspect, 0.1, 100.0)
 
-
 if __name__ == '__main__':
     glutInit()
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE)
-    glutSetOption(GLUT_MULTISAMPLE, 8)
-    glutInitWindowSize(1200, 800)
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH)
+    glutInitWindowSize(800, 600)
     glutInitWindowPosition(50, 50)
     glutCreateWindow("3D Terrain")
     glutDisplayFunc(display)
@@ -215,4 +240,5 @@ if __name__ == '__main__':
     glutKeyboardFunc(keyboard)
     initGL()
     glutTimerFunc(0, animate, 0)
+
     glutMainLoop()
